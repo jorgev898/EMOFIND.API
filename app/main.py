@@ -38,6 +38,10 @@ def detect_and_translate(text):
         return translated_text
     return text
 
+@app.get("/")
+async def root():
+    return {"message": "Welcome to the Sentiment Analysis API!"}
+
 @app.post("/predict/")
 async def predict_sentiment(input_data: TextInput):
     if not input_data.text.strip():
