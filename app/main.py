@@ -5,7 +5,6 @@ import tensorflow as tf
 import numpy as np
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 import pickle
-from langdetect import detect
 from deep_translator import GoogleTranslator
 
 app = FastAPI()
@@ -40,30 +39,24 @@ def preprocess_text(text):
     text = re.sub(r"\s+", " ", text).strip()  # Espacios extra
     return text
 
-def detect_and_translate(text):
-    detected_lang = detect(text)
-    if detected_lang == "es":
-        translated_text = GoogleTranslator(source="es", target="en").translate(text)
-        return translated_text
-    return text
-
 @app.get("/")
 async def root():
     return {"message": "Welcome to the Sentiment Analysis API!"}
+
 
 @app.post("/predict/")
 async def predict_sentiment(input_data: TextInput):
     if not input_data.text.strip():
         raise HTTPException(status_code=400, detail="No text provided")
     
-    text = detect_and_translate(input_data.text)
-    text_clean = preprocess_text(text)
+    translated_text = GoogleTranslator(source="es", target="en").translate(input_data.text)
+    text_clean = preprocess_text(translated_text)
     sequence = tokenizer.texts_to_sequences([text_clean])
     padded_sequence = pad_sequences(sequence, maxlen=max_len, padding="post")
     
     prediction = model.predict(padded_sequence)
     sentiment = np.argmax(prediction)
 
-    sentiments_map = {0: "Negativo", 1: "Neutro", 2: "Positivo"}
+    sentiments_map = {0: "Negativo", 2: "Positivo"}
     
-    return {"text": text, "sentiment": sentiments_map[sentiment]}
+    return {"text": translated_text, "sentiment": sentiments_map[sentiment]}
